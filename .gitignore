@@ -1,0 +1,7 @@
+images/*.*
+documents/*.*
+documents/*.*
+documents/*.*
+databases/*.*
+__pycache__
+scripts/__pycache__
