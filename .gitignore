@@ -1,7 +1,6 @@
-images/*.*
-documents/*.*
-documents/*.*
-documents/*.*
-databases/*.*
+images/
+documents/
+databases/
+documents/
 __pycache__
 scripts/__pycache__

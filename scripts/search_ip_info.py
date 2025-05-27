@@ -38,14 +38,14 @@ def search_ip_info(excel_path=None):
     df['Whois Result'] = df['Whois Result'].astype('object')  # Garante tipo correto
 
     # Função para obter informações WHOIS de um IP
-    def get_whois_info(ip):
+    def get_whois_info(ipGet):
         try:
             start_time = time.time()
-            obj = IPWhois(ip, timeout=10)  # Timeout global de 10 segundos
+            obj = IPWhois(str(ipGet), timeout=10)  # Timeout global de 10 segundos
             result = obj.lookup_rdap()
 
             if not result or 'network' not in result:
-                return ip, "Erro: Nenhum dado de rede retornado pela consulta WHOIS"
+                return ipGet, "Erro: Nenhum dado de rede retornado pela consulta WHOIS"
 
             whois_data = {
                 'provider': 'N/A',
@@ -80,18 +80,19 @@ def search_ip_info(excel_path=None):
             whois_data['asn_description'] = result.get('asn_description', 'N/A')
             whois_data['ip_version'] = result['network'].get('ip_version', 'N/A')
 
+
             result_str = (
                 f"Provider: {whois_data['provider']}, "
-                f"Location: {whois_data['location']}, "
-                f"Email: {whois_data['email']}, "
-                f"ASN Description: {whois_data['asn_description']}, "
-                f"IP Version: {whois_data['ip_version']}, "
+                #f"Location: {whois_data['location']}, "
+                #f"Email: {whois_data['email']}, "
+                #f"ASN Description: {whois_data['asn_description']}, "
+                #f"IP Version: {whois_data['ip_version']}, "
                 f"CNPJ/CPF: {whois_data['cnpj_cpf']}"
             )
             elapsed_time = time.time() - start_time
-            return ip, f"{result_str} (Tempo: {elapsed_time:.2f}s)"
+            return ipGet, f"{result_str} (Tempo: {elapsed_time:.2f}s)"
         except Exception as e:
-            return ip, f"Erro: {str(e)}"
+            return ipGet, f"Erro: {str(e)}"
 
     # Processa IPs em paralelo com timeout por tarefa
     def process_ips_in_parallel(ips):
@@ -114,12 +115,22 @@ def search_ip_info(excel_path=None):
         return results
 
     # Coleta IPs da coluna "IP Address"
-    ips = df['IP Address'].astype(str).tolist()
-    print(f"Total de IPs a processar: {len(ips)}", fg_color='green')
+    # ips = df['IP Address'].astype(str).tolist()
+    # print(f"Total de IPs a processar: {len(ips)}", fg_color='green')
+
+    # Filtra apenas os IPs que precisam ser processados
+    mask = (df['Whois Result'].isna()) | (df['Whois Result'].str.contains('Erro:', na=False))
+    ips_to_process = df.loc[mask, 'IP Address'].astype(str).tolist()
+
+    print(f"Total de IPs a processar: {len(ips_to_process)}", fg_color='green')
+
+    if not ips_to_process:
+        print("Nenhum IP precisa ser processado. Todos já possuem resultados válidos.", fg_color='yellow')
+        return
 
     # Inicia a busca WHOIS
     print("Iniciando busca WHOIS para os IPs...", fg_color='green')
-    results = process_ips_in_parallel(ips)
+    results = process_ips_in_parallel(ips_to_process)
 
     # Atualiza o DataFrame
     print("Atualizando tabela com resultados...", fg_color='green')
